@@ -59,4 +59,11 @@ public class ProductServiceImpl implements ProductService {
                 .map(entity -> new Product(entity.getId(), entity.getName(), entity.getPrice(), entity.getQuantity()))
                 .collect(Collectors.toList());
     }
+
+    @Override
+    public Product findById(UUID id) {
+        return productRepository.findById(id)
+                .map(entity -> new Product(entity.getId(), entity.getName(), entity.getPrice(), entity.getQuantity()))
+                .orElseThrow(() -> new IllegalArgumentException("Product not found with ID: " + id));
+    }
 }

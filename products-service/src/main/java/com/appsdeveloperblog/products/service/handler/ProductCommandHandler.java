@@ -40,6 +40,11 @@ public class ProductCommandHandler {
             reserveProductCommand.getProductId(),
             reserveProductCommand.getProductQuantity()
       );
+
+      Product foundProduct = productService.findById(reservedProduct.getId());
+      reservedProduct.setName(foundProduct.getName());
+      reservedProduct.setPrice(foundProduct.getPrice());
+            
       reservedProduct = productService.reserve(reservedProduct, reserveProductCommand.getOrderId());
 
       ProductReservedEvent productReservedEvent = new ProductReservedEvent(
