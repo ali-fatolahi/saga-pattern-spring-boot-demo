@@ -9,4 +9,5 @@ public interface OrderService {
 
     void approveOrder(UUID orderId);
 
+    void rejectOrder(UUID orderId);
 }

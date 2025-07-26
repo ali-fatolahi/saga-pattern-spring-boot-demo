@@ -9,12 +9,16 @@ import org.springframework.stereotype.Component;
 
 import com.appsdeveloperblog.core.dto.events.OrderApprovedEvent;
 import com.appsdeveloperblog.core.dto.events.OrderCreatedEvent;
+import com.appsdeveloperblog.core.dto.events.PaymentFailedEvent;
 import com.appsdeveloperblog.core.dto.events.PaymentProcessedEvent;
 import com.appsdeveloperblog.core.dto.events.ProductReservedEvent;
 import com.appsdeveloperblog.core.types.OrderStatus;
 import com.appsdeveloperblog.orders.service.OrderHistoryService;
 import com.appsdeveloperblog.core.dto.commands.ApproveOrderCommand;
+import com.appsdeveloperblog.core.dto.commands.CancelProductReservationCommand;
 import com.appsdeveloperblog.core.dto.commands.ProcessPaymentCommand;
+import com.appsdeveloperblog.core.dto.commands.ProductReservationCancelledEvent;
+import com.appsdeveloperblog.core.dto.commands.RejectOrderCommand;
 import com.appsdeveloperblog.core.dto.commands.ReserveProductCommand;
 
 @Component
@@ -77,4 +81,25 @@ public class OrderSaga {
     public void handleEvent(@Payload OrderApprovedEvent orderApprovedEvent) {
         orderHistoryService.add(orderApprovedEvent.getOrderId(), OrderStatus.APPROVED);
     }
+
+    @KafkaHandler
+    public void handleEvent(@Payload PaymentFailedEvent paymentFailedEvent) {
+        CancelProductReservationCommand cancelProductReservationCommand = new CancelProductReservationCommand(
+                paymentFailedEvent.getProductId(),
+                paymentFailedEvent.getOrderId(),
+                paymentFailedEvent.getProductQuantity()
+        );
+
+        kafkaTemplate.send(productsCommandsTopicName, cancelProductReservationCommand);
+    }
+
+    @KafkaHandler
+    public void handleEvent(@Payload ProductReservationCancelledEvent productReservationCancelledEvent) {
+        RejectOrderCommand rejectOrderCommand = new RejectOrderCommand(
+                productReservationCancelledEvent.getOrderId()
+        );
+
+        kafkaTemplate.send(orderCommandsTopicName, rejectOrderCommand);
+        orderHistoryService.add(productReservationCancelledEvent.getOrderId(), OrderStatus.REJECTED);
+    }    
 }

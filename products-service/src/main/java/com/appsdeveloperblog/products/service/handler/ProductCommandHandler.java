@@ -10,6 +10,8 @@ import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.stereotype.Component;
 
 import com.appsdeveloperblog.core.dto.Product;
+import com.appsdeveloperblog.core.dto.commands.CancelProductReservationCommand;
+import com.appsdeveloperblog.core.dto.commands.ProductReservationCancelledEvent;
 import com.appsdeveloperblog.core.dto.commands.ReserveProductCommand;
 import com.appsdeveloperblog.core.dto.events.ProductReservationFailedEvent;
 import com.appsdeveloperblog.core.dto.events.ProductReservedEvent;
@@ -63,5 +65,21 @@ public class ProductCommandHandler {
             reserveProductCommand.getProductQuantity());
       kafkaTemplate.send(productsEventsTopicName, productReservationFailedEvent);
     }
+  }
+
+  @KafkaHandler
+  public void handleCancelProductReservationCommand(@Payload CancelProductReservationCommand cancelProductReservationCommand) {
+      Product producToCancel = new Product(
+        cancelProductReservationCommand.getProductId(),
+        cancelProductReservationCommand.getProductQuantity()
+      );
+
+      productService.cancelReservation(producToCancel, cancelProductReservationCommand.getOrderId());
+
+      ProductReservationCancelledEvent productReservationCancelledEvent = new ProductReservationCancelledEvent(
+        cancelProductReservationCommand.getProductId(),
+        cancelProductReservationCommand.getOrderId()
+      );
+      kafkaTemplate.send(productsEventsTopicName, productReservationCancelledEvent);
   }
 }
